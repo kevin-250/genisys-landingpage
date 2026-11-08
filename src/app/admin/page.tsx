@@ -197,13 +197,12 @@ async function Users() {
       ) : (
         <div className="card adm-table-wrap">
           <table className="adm-table">
-            <thead><tr><th>Email</th><th>Name</th><th>Uses it for</th><th>Theme</th><th>Version</th><th>Joined</th></tr></thead>
+            <thead><tr><th>Email</th><th>Name</th><th>Theme</th><th>Version</th><th>Joined</th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.email}>
                   <td><a href={`mailto:${u.email}`}>{u.email}</a></td>
                   <td>{u.name ?? "—"}</td>
-                  <td>{u.uses?.join(", ") || "—"}</td>
                   <td>{u.theme ?? "—"}</td>
                   <td>{u.version ?? "—"}</td>
                   <td>{when(u.at)}</td>
