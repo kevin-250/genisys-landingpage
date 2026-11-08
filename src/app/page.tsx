@@ -37,6 +37,16 @@ const FAQ = [
   { q: "Does it work offline?", a: "[OFFLINE: confirm]" },
 ];
 
+// Frosted keycaps floating around the hero headline: [label, hint, position, size, tilt (deg), float time (s)]
+const HERO_CAPS: [string, string, CSSProperties, [number, number], number, number][] = [
+  ["Ctrl", "", { left: "1%", top: "6%" }, [92, 84], -14, 6.5],
+  ["Alt", "", { left: "5%", top: "42%" }, [116, 108], 10, 5.5],
+  ["Esc", "stop", { left: "0%", top: "76%" }, [86, 80], -7, 7],
+  ["Enter", "↵", { right: "1%", top: "4%" }, [128, 92], 12, 6],
+  ["/", "actions", { right: "7%", top: "40%" }, [96, 90], -10, 5],
+  ["Space", "", { right: "0%", top: "74%" }, [196, 82], 6, 6.8],
+];
+
 // Stagger helper: delay for reveal transitions and for the mini-UI animations inside a card.
 const d = (i: number) => ({ "--d": `${i * 90}ms` }) as CSSProperties;
 const step = (i: number) => ({ "--i": i }) as CSSProperties;
@@ -80,6 +90,18 @@ export default async function Home() {
 
       <main id="main">
         <section className="hero wrap" id="top">
+          <div className="hero-caps" aria-hidden="true">
+            {HERO_CAPS.map(([k, hint, pos, [w, h], r, f], i) => (
+              <span
+                key={k}
+                className="cap reveal reveal-z"
+                style={{ ...pos, width: w, height: h, "--r": `${r}deg`, "--f": `${f}s`, "--d": `${300 + i * 110}ms` } as CSSProperties}
+              >
+                <span>{k}</span>
+                {hint && <small>{hint}</small>}
+              </span>
+            ))}
+          </div>
           <p className="eyebrow reveal">
             <span className="dot-live" aria-hidden="true" /> Alt+Space, then just type
           </p>
