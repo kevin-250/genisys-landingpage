@@ -28,6 +28,8 @@ function memRun([op, key, ...args]: Cmd): unknown {
     case "LTRIM":
       mem.set(k, list().slice(Number(args[0]), Number(args[1]) + 1));
       return "OK";
+    case "DEL":
+      return mem.delete(k) ? 1 : 0;
     case "LRANGE":
       return list().slice(Number(args[0]), Number(args[1]) + 1);
     default:
@@ -81,4 +83,9 @@ export async function latestRelease(): Promise<Release | null> {
 
 export async function addRelease(r: Release) {
   await run([["LPUSH", "releases", JSON.stringify(r)], ["LTRIM", "releases", 0, 49]]);
+}
+
+/** Drops the manual links, so the homepage goes back to the newest GitHub release. */
+export async function clearReleases() {
+  await run([["DEL", "releases"]]);
 }

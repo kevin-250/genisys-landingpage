@@ -2,7 +2,8 @@
 import type { Metadata } from "next";
 import { isAdmin } from "@/lib/admin";
 import { releases, stats, storageConnected } from "@/lib/store";
-import { addRelease, login, logout } from "./actions";
+import { githubReleases, LATEST_EXE } from "@/lib/github";
+import { addRelease, login, logout, switchToGithub } from "./actions";
 
 // Not linked from anywhere and kept out of search engines: reachable only by typing /admin.
 export const metadata: Metadata = { title: "Admin · Genisys", robots: { index: false, follow: false } };
@@ -32,7 +33,7 @@ export default async function Admin(props: PageProps<"/admin">) {
         </p>
       )}
 
-      <main className="adm-main">{tab === "home" ? <Home saved={sp.saved === "1"} error={sp.error === "1"} /> : <Dashboard />}</main>
+      <main className="adm-main">{tab === "home" ? <Home saved={sp.saved === "1"} error={sp.error === "1"} auto={sp.auto === "1"} /> : <Dashboard />}</main>
     </div>
   );
 }
@@ -97,39 +98,76 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-async function Home({ saved, error }: { saved: boolean; error: boolean }) {
-  const list = await releases(20);
+async function Home({ saved, error, auto }: { saved: boolean; error: boolean; auto: boolean }) {
+  const [list, gh] = await Promise.all([releases(20), githubReleases().catch(() => null)]);
+  const override = list[0];
   return (
     <>
       <h2 className="adm-h">Home · download links</h2>
+
+      <section className="card adm-card">
+        <div className="adm-chart-h">
+          <b>GitHub releases (automatic)</b>
+          {!override && <span className="adm-live">Live on site</span>}
+        </div>
+        <p className="adm-note">
+          Publish with <code>npm run release</code> in the app and the homepage Download buttons pick up the newest installer by
+          themselves, through <a href={LATEST_EXE}>this always-latest link</a>. The list refreshes every 5 minutes.
+        </p>
+        {auto && <p className="adm-ok" role="status">Back on automatic: the homepage now uses the newest GitHub release.</p>}
+        {gh === null ? (
+          <p className="adm-err">Couldn&apos;t reach GitHub right now. Downloads still work through the always-latest link.</p>
+        ) : gh.length === 0 ? (
+          <p className="adm-note">No releases on GitHub yet. Until the first one, the Download buttons lead to a GitHub 404.</p>
+        ) : (
+          <ul className="adm-list adm-gh">
+            {gh.map((r, i) => (
+              <li key={r.tag}>
+                <div>
+                  <b>{r.tag}</b> {i === 0 && <small className="adm-tag">newest</small>}
+                  <small>{date(Date.parse(r.at))} · {fmt(r.downloads)} installer downloads on GitHub</small>
+                </div>
+                <div className="adm-links">
+                  {r.exe && <a href={r.exe} rel="noopener noreferrer">Installer</a>}
+                  <a href={r.url} rel="noopener noreferrer">Release page</a>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <h3 className="adm-sub">Manual override (optional)</h3>
       <form action={addRelease} className="card adm-card adm-form">
-        <p className="adm-note">The newest release you add here is what the Download buttons on the homepage use.</p>
+        <p className="adm-note">Only if you need to: a link added here replaces the automatic one on the homepage until you switch back.</p>
         <label>Version<input name="version" placeholder="v1.2.0" required maxLength={40} /></label>
         <label>Installer link (.exe)<input name="exe" type="url" placeholder="https://github.com/you/repo/releases/download/v1.2.0/Genisys-Setup.exe" required /></label>
         <label>Portable link (.zip, optional)<input name="zip" type="url" placeholder="https://github.com/you/repo/releases/download/v1.2.0/Genisys.zip" /></label>
         {error && <p className="adm-err" role="alert">Add a version, and use links that start with https://github.com/.</p>}
-        {saved && <p className="adm-ok" role="status">Saved. The homepage now downloads this release.</p>}
-        <button className="adm-btn" type="submit">Publish release</button>
+        {saved && <p className="adm-ok" role="status">Saved. The homepage now downloads this release instead of the automatic one.</p>}
+        <button className="adm-btn" type="submit">Use this link</button>
       </form>
 
-      <h3 className="adm-sub">History</h3>
-      {list.length === 0 ? (
-        <p className="adm-note">No releases yet. Until you add one, the Download buttons have no file to point to.</p>
-      ) : (
-        <ul className="adm-list">
-          {list.map((r, i) => (
-            <li key={`${r.at}-${i}`} className="card">
-              <div>
-                <b>{r.version}</b> {i === 0 && <span className="adm-live">Live on site</span>}
-                <small>{date(r.at)}</small>
-              </div>
-              <div className="adm-links">
-                <a href={r.exe} rel="noopener noreferrer">Installer</a>
-                {r.zip && <a href={r.zip} rel="noopener noreferrer">Portable</a>}
-              </div>
-            </li>
-          ))}
-        </ul>
+      {override && (
+        <>
+          <ul className="adm-list" style={{ marginTop: 12 }}>
+            {list.map((r, i) => (
+              <li key={`${r.at}-${i}`} className="card">
+                <div>
+                  <b>{r.version}</b> {i === 0 && <span className="adm-live">Live on site</span>}
+                  <small>{date(r.at)}</small>
+                </div>
+                <div className="adm-links">
+                  <a href={r.exe} rel="noopener noreferrer">Installer</a>
+                  {r.zip && <a href={r.zip} rel="noopener noreferrer">Portable</a>}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <form action={switchToGithub} style={{ marginTop: 12 }}>
+            <button className="adm-btn adm-btn-soft" type="submit">Go back to automatic GitHub releases</button>
+          </form>
+        </>
       )}
     </>
   );

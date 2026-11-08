@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { COOKIE, PASSWORD, TOKEN, isAdmin } from "@/lib/admin";
-import { addRelease as saveRelease } from "@/lib/store";
+import { addRelease as saveRelease, clearReleases } from "@/lib/store";
 
 export async function login(form: FormData) {
   if (form.get("password") !== PASSWORD) redirect("/admin?error=1");
@@ -33,4 +33,10 @@ export async function addRelease(form: FormData) {
   if (!version || !isGithub(exe) || (zip && !isGithub(zip))) redirect("/admin?tab=home&error=1");
   await saveRelease({ version, exe, ...(zip ? { zip } : {}), at: Date.now() });
   redirect("/admin?tab=home&saved=1");
+}
+
+export async function switchToGithub() {
+  if (!(await isAdmin())) redirect("/admin");
+  await clearReleases();
+  redirect("/admin?tab=home&auto=1");
 }
