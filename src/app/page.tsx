@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- tiny static SVG logo, no optimisation needed */
 import type { CSSProperties } from "react";
 import { connection } from "next/server";
-import { LATEST_EXE } from "@/lib/github";
 import { latestRelease } from "@/lib/store";
 import { DownloadButton, Dots, Reveal, Split, ThemeToggle, TrackVisit } from "./client";
 import { AppMock } from "./desktop";
@@ -64,7 +63,7 @@ export default async function Home() {
   await connection(); // render per request so a release published in /admin shows up right away
   // A link pasted in /admin wins; otherwise the newest GitHub release, picked up automatically.
   const rel = await latestRelease().catch(() => null);
-  const dl = rel ? { exe: rel.exe, zip: rel.zip } : { exe: LATEST_EXE };
+  const dl = { exe: "/download", zip: rel?.zip ? "/download?file=zip" : undefined }; // /download sends the newest file
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>

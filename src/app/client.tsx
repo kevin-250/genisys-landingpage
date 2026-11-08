@@ -5,8 +5,8 @@ import type React from "react";
 
 export type DownloadLinks = { exe?: string; zip?: string };
 
-// Counts a visit (page load) or a download (button click) for the admin dashboard.
-const ping = (type: "visit" | "download") => {
+// Counts a visit for the admin dashboard (downloads are counted by /download on the server).
+const ping = (type: "visit") => {
   try {
     navigator.sendBeacon("/api/track", JSON.stringify({ type }));
   } catch {}
@@ -63,7 +63,7 @@ export function DownloadButton({ size = "lg", links }: { size?: "lg" | "sm"; lin
 
   return (
     <div className={`dl dl-${size}`} ref={box}>
-      <a className="dl-main" href={exe} onClick={() => ping("download")}>
+      <a className="dl-main" href={exe}>
         <WindowsIcon />
         <span>{size === "lg" ? "Download for Windows" : "Download"}</span>
       </a>
@@ -82,14 +82,14 @@ export function DownloadButton({ size = "lg", links }: { size?: "lg" | "sm"; lin
       </button>
       <ul className="dl-menu" id={id} hidden={!open}>
         <li>
-          <a href={exe} onClick={() => { ping("download"); setOpen(false); }}>
+          <a href={exe} onClick={() => setOpen(false)}>
             <b>Installer</b>
             <small>.exe · Windows 10 and 11</small>
           </a>
         </li>
         {links.zip && (
           <li>
-            <a href={links.zip} onClick={() => { ping("download"); setOpen(false); }}>
+            <a href={links.zip} onClick={() => setOpen(false)}>
               <b>Portable</b>
               <small>.zip · no install, unzip and run</small>
             </a>
