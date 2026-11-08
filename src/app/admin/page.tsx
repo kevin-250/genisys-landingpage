@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element -- tiny static SVG logo */
 import type { Metadata } from "next";
 import { isAdmin } from "@/lib/admin";
-import { releases, stats, storageConnected } from "@/lib/store";
+import { appCounts, listErrors, listReports, listUsers, releases, stats, storageConnected } from "@/lib/store";
 import { githubReleases, LATEST_EXE } from "@/lib/github";
-import { addRelease, login, logout, switchToGithub } from "./actions";
+import { addRelease, clearAppErrors, login, logout, switchToGithub } from "./actions";
 
 // Not linked from anywhere and kept out of search engines: reachable only by typing /admin.
 export const metadata: Metadata = { title: "Admin · Genisys", robots: { index: false, follow: false } };
@@ -14,15 +14,19 @@ const date = (ms: number) => new Date(ms).toLocaleDateString("en-US", { year: "n
 export default async function Admin(props: PageProps<"/admin">) {
   const sp = await props.searchParams;
   if (!(await isAdmin())) return <Login error={sp.error === "1"} />;
-  const tab = sp.tab === "home" ? "home" : "dashboard";
+  const TABS = ["dashboard", "home", "users", "errors", "reports"] as const;
+  const tab = TABS.find((t) => t === sp.tab) ?? "dashboard";
 
   return (
     <div className="adm">
       <header className="adm-top">
         <span className="brand"><img src="/logo.svg" alt="" width="26" height="26" /> Genisys <small>admin</small></span>
         <nav className="adm-tabs" aria-label="Admin">
-          <a href="/admin" aria-current={tab === "dashboard" ? "page" : undefined}>Dashboard</a>
-          <a href="/admin?tab=home" aria-current={tab === "home" ? "page" : undefined}>Home</a>
+          {TABS.map((t) => (
+            <a key={t} href={t === "dashboard" ? "/admin" : `/admin?tab=${t}`} aria-current={tab === t ? "page" : undefined}>
+              {t[0].toUpperCase() + t.slice(1)}
+            </a>
+          ))}
         </nav>
         <form action={logout}><button className="adm-btn adm-btn-soft" type="submit">Log out</button></form>
       </header>
@@ -33,7 +37,13 @@ export default async function Admin(props: PageProps<"/admin">) {
         </p>
       )}
 
-      <main className="adm-main">{tab === "home" ? <Home saved={sp.saved === "1"} error={sp.error === "1"} auto={sp.auto === "1"} /> : <Dashboard />}</main>
+      <main className="adm-main">
+        {tab === "home" ? <Home saved={sp.saved === "1"} error={sp.error === "1"} auto={sp.auto === "1"} />
+          : tab === "users" ? <Users />
+          : tab === "errors" ? <Errors />
+          : tab === "reports" ? <Reports />
+          : <Dashboard />}
+      </main>
     </div>
   );
 }
@@ -54,7 +64,7 @@ function Login({ error }: { error: boolean }) {
 }
 
 async function Dashboard() {
-  const s = await stats(14);
+  const [s, c] = await Promise.all([stats(14), appCounts()]);
   const today = s.days[s.days.length - 1];
   const max = Math.max(1, ...s.days.map((d) => d.visits));
   const rate = s.visits ? Math.round((s.downloads / s.visits) * 100) : 0;
@@ -62,6 +72,7 @@ async function Dashboard() {
     <>
       <h2 className="adm-h">Dashboard</h2>
       <div className="adm-stats">
+        <Stat label="App users" value={fmt(c.users)} />
         <Stat label="Visits (all time)" value={fmt(s.visits)} />
         <Stat label="Downloads (all time)" value={fmt(s.downloads)} />
         <Stat label="Visits today" value={fmt(today.visits)} />
@@ -168,6 +179,101 @@ async function Home({ saved, error, auto }: { saved: boolean; error: boolean; au
             <button className="adm-btn adm-btn-soft" type="submit">Go back to automatic GitHub releases</button>
           </form>
         </>
+      )}
+    </>
+  );
+}
+
+const when = (ms: number) => new Date(ms).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+async function Users() {
+  const users = await listUsers();
+  return (
+    <>
+      <h2 className="adm-h">Users · {fmt(users.length)}</h2>
+      <p className="adm-note">Accounts created in the app&apos;s first-run setup. One row per email.</p>
+      {users.length === 0 ? (
+        <p className="adm-note adm-empty">No accounts yet.</p>
+      ) : (
+        <div className="card adm-table-wrap">
+          <table className="adm-table">
+            <thead><tr><th>Email</th><th>Name</th><th>Uses it for</th><th>Theme</th><th>Version</th><th>Joined</th></tr></thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.email}>
+                  <td><a href={`mailto:${u.email}`}>{u.email}</a></td>
+                  <td>{u.name ?? "—"}</td>
+                  <td>{u.uses?.join(", ") || "—"}</td>
+                  <td>{u.theme ?? "—"}</td>
+                  <td>{u.version ?? "—"}</td>
+                  <td>{when(u.at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
+
+async function Errors() {
+  const errors = await listErrors(200);
+  return (
+    <>
+      <div className="adm-row">
+        <h2 className="adm-h">Errors · {fmt(errors.length)}</h2>
+        {errors.length > 0 && (
+          <form action={clearAppErrors}><button className="adm-btn adm-btn-soft" type="submit">Clear all</button></form>
+        )}
+      </div>
+      <p className="adm-note">Errors the app caught, from users who left error reports on. User folders are removed before sending. Newest first, last 500 kept.</p>
+      {errors.length === 0 ? (
+        <p className="adm-note adm-empty">No errors reported. 🎉</p>
+      ) : (
+        <ul className="adm-list adm-feed">
+          {errors.map((e, i) => (
+            <li key={`${e.at}-${i}`} className="card">
+              <div className="adm-feed-h">
+                <span className={`adm-kind k-${e.kind}`}>{e.kind}</span>
+                <small>{when(e.at)} · v{e.version ?? "?"} · {e.os ?? "?"}</small>
+              </div>
+              <p className="adm-msg">{e.message}</p>
+              {e.stack && (
+                <details><summary>Stack trace</summary><pre>{e.stack}</pre></details>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+async function Reports() {
+  const reports = await listReports(200);
+  return (
+    <>
+      <h2 className="adm-h">Reports · {fmt(reports.length)}</h2>
+      <p className="adm-note">Messages users sent from the app&apos;s Report tab. Newest first.</p>
+      {reports.length === 0 ? (
+        <p className="adm-note adm-empty">No reports yet.</p>
+      ) : (
+        <ul className="adm-list adm-feed">
+          {reports.map((r, i) => (
+            <li key={`${r.at}-${i}`} className="card">
+              <div className="adm-feed-h">
+                <span className={`adm-kind k-${r.type}`}>{r.type}</span>
+                <small>
+                  {when(r.at)} · v{r.version ?? "?"}
+                  {r.name ? ` · ${r.name}` : ""}
+                </small>
+                {r.email && <a className="adm-reply" href={`mailto:${r.email}?subject=Re:%20your%20Genisys%20${r.type}`}>Reply to {r.email}</a>}
+              </div>
+              <p className="adm-msg">{r.message}</p>
+            </li>
+          ))}
+        </ul>
       )}
     </>
   );

@@ -9,12 +9,25 @@ type Cmd = (string | number)[];
 
 // shortcut: without the env vars (local dev) data lives in memory and resets on restart; connect Upstash before going live.
 // Kept on globalThis so every route in the same dev process shares one copy.
-const g = globalThis as typeof globalThis & { __genisysMem?: Map<string, number | string[]> };
+const g = globalThis as typeof globalThis & { __genisysMem?: Map<string, unknown> };
 const mem = (g.__genisysMem ??= new Map());
 function memRun([op, key, ...args]: Cmd): unknown {
   const k = String(key);
   const list = () => (mem.get(k) as string[] | undefined) ?? [];
+  const hash = () => (mem.get(k) as Record<string, string> | undefined) ?? {};
   switch (op) {
+    case "HSET": {
+      const h = hash();
+      const isNew = !(String(args[0]) in h);
+      mem.set(k, { ...h, [String(args[0])]: String(args[1]) });
+      return isNew ? 1 : 0;
+    }
+    case "HGETALL":
+      return Object.entries(hash()).flat();
+    case "HLEN":
+      return Object.keys(hash()).length;
+    case "LLEN":
+      return list().length;
     case "INCR": {
       const v = ((mem.get(k) as number | undefined) ?? 0) + 1;
       mem.set(k, v);
@@ -88,4 +101,49 @@ export async function addRelease(r: Release) {
 /** Drops the manual links, so the homepage goes back to the newest GitHub release. */
 export async function clearReleases() {
   await run([["DEL", "releases"]]);
+}
+
+/* ---------- Desktop app: accounts, error reports, user reports ---------- */
+
+export type AppUser = { email: string; name?: string; uses?: string[]; theme?: string; installId: string; version?: string; os?: string; at: number };
+export type AppError = { kind: string; message: string; stack?: string; installId?: string; version?: string; os?: string; at: number };
+export type AppReport = { type: string; message: string; email?: string; name?: string; installId?: string; version?: string; os?: string; at: number };
+
+const parse = <T>(rows: unknown) => ((rows as string[] | null) ?? []).map((r) => JSON.parse(r) as T);
+
+/** One entry per email, so reinstalling never counts a user twice. */
+export async function saveUser(u: AppUser) {
+  const [isNew] = (await run([["HSET", "users", u.email, JSON.stringify(u)]])) as number[];
+  if (isNew === 1) await run([["INCR", `signups:${day()}`]]);
+}
+
+export async function listUsers(): Promise<AppUser[]> {
+  const [flat] = (await run([["HGETALL", "users"]])) as string[][];
+  const users: AppUser[] = [];
+  for (let i = 1; i < (flat ?? []).length; i += 2) users.push(JSON.parse(flat[i]) as AppUser);
+  return users.sort((a, b) => b.at - a.at);
+}
+
+export async function appCounts() {
+  const [users, errors, reports] = (await run([["HLEN", "users"], ["LLEN", "errors"], ["LLEN", "reports"]])) as number[];
+  return { users: Number(users) || 0, errors: Number(errors) || 0, reports: Number(reports) || 0 };
+}
+
+export async function addError(e: AppError) {
+  await run([["LPUSH", "errors", JSON.stringify(e)], ["LTRIM", "errors", 0, 499]]);
+}
+export async function listErrors(limit = 200) {
+  const [rows] = await run([["LRANGE", "errors", 0, limit - 1]]);
+  return parse<AppError>(rows);
+}
+export async function clearErrors() {
+  await run([["DEL", "errors"]]);
+}
+
+export async function addReport(r: AppReport) {
+  await run([["LPUSH", "reports", JSON.stringify(r)], ["LTRIM", "reports", 0, 999]]);
+}
+export async function listReports(limit = 200) {
+  const [rows] = await run([["LRANGE", "reports", 0, limit - 1]]);
+  return parse<AppReport>(rows);
 }
