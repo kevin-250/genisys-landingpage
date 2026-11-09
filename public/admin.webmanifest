@@ -1,0 +1,15 @@
+{
+  "name": "Genisys Admin",
+  "short_name": "Admin",
+  "description": "Genisys users, reports, errors and releases.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#ece8e2",
+  "theme_color": "#ece8e2",
+  "icons": [
+    { "src": "/admin-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/admin-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/admin-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

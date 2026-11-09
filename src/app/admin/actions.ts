@@ -30,15 +30,15 @@ export async function addRelease(form: FormData) {
   const version = String(form.get("version") ?? "").trim().slice(0, 40);
   const exe = String(form.get("exe") ?? "").trim();
   const zip = String(form.get("zip") ?? "").trim();
-  if (!version || !isGithub(exe) || (zip && !isGithub(zip))) redirect("/admin?tab=home&error=1");
+  if (!version || !isGithub(exe) || (zip && !isGithub(zip))) redirect("/admin?tab=releases&error=1");
   await saveRelease({ version, exe, ...(zip ? { zip } : {}), at: Date.now() });
-  redirect("/admin?tab=home&saved=1");
+  redirect("/admin?tab=releases&saved=1");
 }
 
 export async function switchToGithub() {
   if (!(await isAdmin())) redirect("/admin");
   await clearReleases();
-  redirect("/admin?tab=home&auto=1");
+  redirect("/admin?tab=releases&auto=1");
 }
 
 export async function clearAppErrors() {
