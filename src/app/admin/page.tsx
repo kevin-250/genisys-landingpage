@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin";
 import { appCounts, listErrors, listReports, listUsers, releases, stats, storageConnected, type AppError, type AppUser } from "@/lib/store";
 import { githubReleases, LATEST_EXE } from "@/lib/github";
 import { addRelease, clearAppErrors, login, logout, switchToGithub } from "./actions";
+import { BarChart, Change, TrendChart } from "./charts";
 
 // Not linked from anywhere and kept out of search engines: reachable only by typing /admin.
 // Installable on a phone ("Add to Home screen"): its own manifest, so only /admin becomes an app, not the public site.
@@ -74,7 +75,7 @@ export default async function Admin(props: PageProps<"/admin">) {
           : tab === "reports" ? <Reports reports={reports} type={one("type")} />
           : tab === "errors" ? <Errors errors={errors} confirm={one("confirm") === "1"} />
           : tab === "releases" ? <Releases saved={one("saved") === "1"} error={one("error") === "1"} auto={one("auto") === "1"} />
-          : <Overview errors={errors} reports={reports} />}
+          : <Overview errors={errors} reports={reports} range={[7, 14, 30, 90].find((n) => String(n) === one("range")) ?? 30} />}
       </main>
     </div>
   );
@@ -109,40 +110,49 @@ function Head({ title, note, children }: { title: string; note?: string; childre
 
 /* ---------- Overview ---------- */
 
-async function Overview({ errors, reports }: { errors: AppError[]; reports: Awaited<ReturnType<typeof listReports>> }) {
-  const [s, c, manual, gh] = await Promise.all([stats(14), appCounts(), releases(1), githubReleases().catch(() => null)]);
-  const today = s.days[s.days.length - 1];
-  const max = Math.max(1, ...s.days.map((d) => d.visits));
-  const rate = s.visits ? Math.round((s.downloads / s.visits) * 100) : 0;
+async function Overview({ errors, reports, range }: { errors: AppError[]; reports: Awaited<ReturnType<typeof listReports>>; range: number }) {
+  // twice the range: the older half is the "previous period" for the change arrows
+  const [s, c, manual, gh, users] = await Promise.all([stats(range * 2), appCounts(), releases(1), githubReleases().catch(() => null), listUsers()]);
+  const prev = s.days.slice(0, range), cur = s.days.slice(range);
+  const days = cur.map((d) => d.day);
+  const sum = (rows: typeof cur, k: "visits" | "downloads") => rows.reduce((t, d) => t + d[k], 0);
+  const joined = (list: string[]) => list.map((d) => users.filter((u) => new Date(u.at).toISOString().slice(0, 10) === d).length);
+  const newUsers = joined(days), newBefore = joined(prev.map((d) => d.day));
+  const visits = sum(cur, "visits"), downloads = sum(cur, "downloads");
+  const rate = visits ? Math.round((downloads / visits) * 100) : 0;
+  const ratePrev = sum(prev, "visits") ? Math.round((sum(prev, "downloads") / sum(prev, "visits")) * 100) : 0;
   const live = manual[0]?.version ?? gh?.[0]?.tag;
   const groups = groupErrors(errors).slice(0, 3);
+  const total = (a: number[]) => a.reduce((t, n) => t + n, 0);
   return (
     <>
-      <Head title="Overview" note={live ? `Live version ${live} · ${manual[0] ? "manual link" : "automatic from GitHub"}` : undefined} />
+      <Head title="Overview" note={live ? `Live version ${live} · ${manual[0] ? "manual link" : "automatic from GitHub"}` : undefined}>
+        <nav className="adm-filter adm-range" aria-label="Range">
+          {[7, 14, 30, 90].map((n) => <a key={n} href={`/admin?range=${n}`} aria-current={range === n ? "page" : undefined}>{n}d</a>)}
+        </nav>
+      </Head>
       <div className="adm-kpis">
-        <Stat label="App users" value={fmt(c.users)} />
-        <Stat label="Downloads today" value={fmt(today.downloads)} />
-        <Stat label="Visits today" value={fmt(today.visits)} />
-        <Stat label="Visit → download" value={`${rate}%`} />
+        <Kpi label="Visits" value={fmt(visits)} change={<Change now={visits} before={sum(prev, "visits")} />} />
+        <Kpi label="Downloads" value={fmt(downloads)} change={<Change now={downloads} before={sum(prev, "downloads")} />} />
+        <Kpi label="New users" value={fmt(total(newUsers))} change={<Change now={total(newUsers)} before={total(newBefore)} />} />
+        <Kpi label="Visit → download" value={`${rate}%`} change={<Change now={rate} before={ratePrev} />} />
       </div>
-      <p className="adm-alltime">All time: <b>{fmt(s.visits)}</b> visits · <b>{fmt(s.downloads)}</b> downloads</p>
+      <p className="adm-alltime">Last {range} days vs the {range} before · all time: <b>{fmt(s.visits)}</b> visits · <b>{fmt(s.downloads)}</b> downloads · <b>{fmt(c.users)}</b> users</p>
 
-      <section className="card adm-card" aria-label="Last 14 days">
+      <section className="card adm-card" aria-label={`Visits and downloads, last ${range} days`}>
         <div className="adm-card-h">
-          <h2>Last 14 days</h2>
+          <h2>Visits and downloads</h2>
           <span className="adm-legend"><i className="adm-v" /> visits <i className="adm-d" /> downloads</span>
         </div>
-        <div className="adm-bars">
-          {s.days.map((d, i) => (
-            <div key={d.day} className="adm-col" title={`${d.day}: ${d.visits} visits, ${d.downloads} downloads`}>
-              <div className="adm-pair">
-                <i className="adm-v" style={{ height: `${(d.visits / max) * 100}%` }} />
-                <i className="adm-d" style={{ height: `${(d.downloads / max) * 100}%` }} />
-              </div>
-              <small className={i % 2 ? "adm-odd" : undefined}>{d.day.slice(8)}</small>
-            </div>
-          ))}
-        </div>
+        <TrendChart days={days} series={[
+          { key: "v", label: "Visits", color: "var(--blue)", values: cur.map((d) => d.visits) },
+          { key: "d", label: "Downloads", color: "var(--pink)", values: cur.map((d) => d.downloads) },
+        ]} />
+      </section>
+
+      <section className="card adm-card" aria-label={`New users, last ${range} days`}>
+        <div className="adm-card-h"><h2>New users</h2><small>{fmt(total(newUsers))} in {range} days</small></div>
+        <BarChart days={days} values={newUsers} label="New users" color="var(--sun)" />
       </section>
 
       <div className="adm-two">
@@ -171,11 +181,12 @@ async function Overview({ errors, reports }: { errors: AppError[]; reports: Awai
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, change }: { label: string; value: string; change: ReactNode }) {
   return (
     <div className="card adm-stat">
       <small>{label}</small>
       <b>{value}</b>
+      <span className="adm-change">{change}</span>
     </div>
   );
 }

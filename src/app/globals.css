@@ -612,14 +612,40 @@ h2 { font-size: clamp(30px, 4.6vw, 54px); line-height: 1.08; font-weight: 600; l
 .adm-alltime { margin: -4px 0 0; color: var(--muted); font-size: 13.5px; }
 .adm-alltime b { color: var(--text); }
 .adm-legend { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
-.adm-legend i, .adm-pair i { display: inline-block; border-radius: 3px; }
 .adm-legend i { width: 10px; height: 10px; margin-left: 8px; }
 .adm-v { background: var(--blue); } .adm-d { background: var(--pink); }
-.adm-bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; height: 190px; }
-.adm-col { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-.adm-pair { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; border-bottom: 1px solid var(--line); }
-.adm-pair i { width: 40%; min-height: 2px; border-radius: 3px 3px 0 0; }
-.adm-col small { color: var(--muted); font: 11px var(--mono); }
+.adm-legend i { display: inline-block; border-radius: 3px; }
+.adm-change { font: 600 12.5px var(--ui); }
+.ch-up { color: #23784a; } [data-theme="dark"] .ch-up { color: var(--green); }
+.ch-down { color: var(--red); } .ch-flat { color: var(--muted); }
+.adm-range a { padding: 6px 12px; font-size: 13px; }
+
+/* charts (src/app/admin/charts.tsx) */
+.ch { display: grid; grid-template-columns: auto 1fr; grid-template-rows: var(--h) auto; column-gap: 10px; }
+.ch-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; margin: -7px 0; color: var(--muted); font: 11px/14px var(--mono); }
+.ch-plot { position: relative; min-width: 0; }
+.ch-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ch-grid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.ch-line { stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.ch-hit { position: absolute; inset: 0; display: grid; }
+.ch-day { position: relative; outline: none; }
+.ch-day::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--line2); opacity: 0; }
+.ch-dot { position: absolute; left: 50%; width: 9px; height: 9px; margin: 0 0 -4.5px -4.5px; border-radius: 50%; box-shadow: 0 0 0 2px var(--card); opacity: 0; }
+.ch-bar { position: absolute; bottom: 0; left: 18%; right: 18%; min-height: 2px; border-radius: 4px 4px 0 0; opacity: .85; }
+.ch-bars .ch-plot { border-bottom: 1px solid var(--line); }
+.ch-tip { position: absolute; z-index: 5; top: -6px; left: 50%; transform: translate(-50%, -100%); display: none; gap: 3px; min-width: 130px; padding: 8px 10px;
+  border-radius: 10px; background: var(--accent); color: var(--accent-ink); font: 12px/1.35 var(--ui); white-space: nowrap; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); pointer-events: none; }
+.ch-tip span { display: flex; align-items: center; gap: 6px; }
+.ch-tip span b { margin-left: auto; padding-left: 12px; }
+.ch-tip i { width: 8px; height: 8px; border-radius: 2px; }
+.ch-l .ch-tip { left: 0; transform: translate(0, -100%); }
+.ch-r .ch-tip { left: auto; right: 0; transform: translate(0, -100%); }
+.ch-day:hover::before, .ch-day:focus::before, .ch-day:hover .ch-dot, .ch-day:focus .ch-dot { opacity: 1; }
+.ch-day:hover .ch-tip, .ch-day:focus .ch-tip { display: grid; }
+.ch-day:hover .ch-bar, .ch-day:focus .ch-bar { opacity: 1; }
+.ch-x { grid-column: 2; display: grid; margin-top: 8px; color: var(--muted); font: 11px var(--mono); }
+.ch-x span { white-space: nowrap; overflow: visible; text-align: center; width: 0; justify-self: center; display: flex; justify-content: center; }
+.adm-card .ch { margin-top: 18px; }
 .adm-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .adm-mini { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
 .adm-mini li { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 10px; }
@@ -722,9 +748,9 @@ h2 { font-size: clamp(30px, 4.6vw, 54px); line-height: 1.08; font-weight: 600; l
   .adm-card { padding: 16px; }
   .adm-stat { padding: 14px 16px; }
   .adm-stat b { font-size: 26px; }
-  .adm-bars { height: 150px; gap: 3px; }
-  .adm-col small.adm-odd { visibility: hidden; }
   .adm-grid { grid-template-columns: 1fr; }
+  .ch { --h: 170px !important; }
+  .ch-bars { --h: 110px !important; }
   .adm-rel li { grid-template-columns: 1fr auto; }
   .adm-rel li small:last-child { display: none; }
   .adm-head > .adm-btn, .adm-head > .adm-confirm { width: 100%; }
