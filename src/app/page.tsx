@@ -2,7 +2,7 @@
 import type { CSSProperties } from "react";
 import { connection } from "next/server";
 import { latestRelease } from "@/lib/store";
-import { DownloadButton, Dots, Reveal, Split, ThemeToggle, TrackVisit } from "./client";
+import { DownloadButton, Dots, NavMenu, Reveal, Split, ThemeToggle, TrackVisit } from "./client";
 import { AppMock } from "./desktop";
 
 const F = {
@@ -20,11 +20,17 @@ const EXAMPLES = [
   { group: "Web", items: ["search cheap flights to lisbon", "/browser best laptops under $800"] },
   { group: "Agents", items: ["/agent 3", "/agent 2 [plan a weekend in paris, find a cheap hotel there]"] },
 ];
+// Page sections, used by the top nav (a ☰ menu on phones) and the footer.
+const SECTIONS: [string, string][] = [["#how", "How it works"], ["#features", "Features"], ["#examples", "Examples"], ["#faq", "FAQ"]];
+
 const ALL_EXAMPLES = EXAMPLES.flatMap((g) => g.items);
 
 const FAQ = [
-  { q: "Is it free?", a: "[FREE? confirm]" },
-  { q: "What data leaves my PC?", a: "[DATA NOTE: confirm]" },
+  { q: "Is it free?", a: "Yes. Genisys is free to download and use, with no subscription. You only need an email to set it up." },
+  {
+    q: "What data leaves my PC?",
+    a: "Your email, name and theme choice from the first setup, so I know who uses Genisys. What you type is sent to the AI model that works out the steps. If you leave error reports on, error messages are sent too, with your user folder and name removed first. Messages you send from the Report tab come to me. Your memory, notes and settings stay on your PC.",
+  },
   { q: "Which Windows versions does it run on?", a: "Windows 10 and Windows 11." },
   {
     q: "How do I stop it or uninstall it?",
@@ -34,7 +40,7 @@ const FAQ = [
     q: "Is it safe to let it delete files?",
     a: "It always asks before it deletes anything. And if you say yes and then regret it, the delete can be undone.",
   },
-  { q: "Does it work offline?", a: "[OFFLINE: confirm]" },
+  { q: "Does it work offline?", a: "Partly. New requests need the internet, because the AI runs online. Things Genisys has done for you before still work offline, straight from its memory." },
 ];
 
 // Frosted keycaps floating around the hero headline: [label, hint, position, size, tilt (deg), float time (s)]
@@ -78,11 +84,10 @@ export default async function Home() {
             <span>Genisys</span>
           </a>
           <nav aria-label="Main" className="nav-links">
-            <a href="#features">Features</a>
-            <a href="#examples">Examples</a>
-            <a href="#faq">FAQ</a>
+            {SECTIONS.map(([href, label]) => <a key={href} href={href}>{label}</a>)}
           </nav>
           <div className="nav-end">
+            <NavMenu links={SECTIONS} />
             <ThemeToggle />
             <DownloadButton size="sm" links={dl} />
           </div>
@@ -112,13 +117,16 @@ export default async function Home() {
             <span className="soft">Your PC does it.</span>
           </h1>
           <p className="lede reveal">
-            Open apps, find that file you half remember, search the web or start an episode. One line, no digging through folders.
+            Genisys is a free app for Windows. Type what you want in normal words, like “open my downloads folder”, and it does it for you.
           </p>
           <div className="hero-cta reveal">
             <DownloadButton links={dl} />
           </div>
           <p className="fine reveal">
-            Windows 10 and 11 · [FREE? confirm] · [ACCOUNT NEEDED? confirm] · [DATA NOTE: confirm]
+            Windows 10 and 11 · Free · Sign up with just your email
+          </p>
+          <p className="fine reveal">
+            Questions? <a href="#faq">Read the FAQ</a> · New here? <a href="#how">See how it works</a>
           </p>
         </section>
 
@@ -127,6 +135,42 @@ export default async function Home() {
             A demo of a Windows desktop. Tasks are typed into Genisys, and it opens the right app for each one: three agent windows, a browser search, a music player, File Explorer moving PDFs, and a code editor writing a script.
           </p>
           <AppMock />
+        </section>
+
+        <section className="section wrap" id="how" aria-labelledby="h-h">
+          <div className="head-c reveal">
+            <p className="kicker">How it works</p>
+            <h2 id="h-h" className="grad">Three steps, no learning curve.</h2>
+            <p className="sub">If you can send a text message, you can use Genisys.</p>
+          </div>
+          <ol className="how">
+            <li className="card how-step reveal" style={d(0)}>
+              <span className="how-n" aria-hidden="true">1</span>
+              <div className="how-vis" aria-hidden="true">
+                <span className="how-btn">
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M1 2.6 6.6 1.8v5.5H1zM7.4 1.7 15 .6v6.7H7.4zM1 8.1h5.6v5.5L1 12.8zM7.4 8.1H15v6.8l-7.6-1.1z" /></svg>
+                  Download for Windows
+                </span>
+              </div>
+              <h3>Download and install</h3>
+              <p>Click Download, open the file, and follow the steps. It takes about a minute.</p>
+            </li>
+            <li className="card how-step reveal" style={d(1)}>
+              <span className="how-n" aria-hidden="true">2</span>
+              <div className="how-vis" aria-hidden="true"><kbd>Alt</kbd><span>+</span><kbd>Space</kbd></div>
+              <h3>Press Alt + Space</h3>
+              <p>A small bar appears on top of whatever you are doing, in any app.</p>
+            </li>
+            <li className="card how-step reveal" style={d(2)}>
+              <span className="how-n" aria-hidden="true">3</span>
+              <div className="how-vis how-type" aria-hidden="true">
+                <span>open my downloads folder</span>
+                <b><Check /> Done</b>
+              </div>
+              <h3>Type what you want</h3>
+              <p>Write it like a message to a friend. Genisys does the clicking for you.</p>
+            </li>
+          </ol>
         </section>
 
         {/* 1 · Two big tiles: the bar + it does the task */}
@@ -298,10 +342,10 @@ export default async function Home() {
             <blockquote>
               <p className="story-h">One developer, one very specific annoyance.</p>
               <p>
-                Hi, I&apos;m [YOUR NAME], and Genisys is a one-person project. I got tired of clicking through five folders just to open one file, so I built a bar I could just tell. It&apos;s still growing, and I fix and add things one by one.
+                Hi, I&apos;m Kevin, and Genisys is a one-person project. I got tired of clicking through five folders just to open one file, so I built a bar I could just tell. It&apos;s still growing, and I fix and add things one by one.
               </p>
             </blockquote>
-            <figcaption><Logo size={36} /><span><b>[YOUR NAME]</b><small>Maker of Genisys</small></span></figcaption>
+            <figcaption><Logo size={36} /><span><b>Kevin</b><small>Maker of Genisys</small></span></figcaption>
           </figure>
         </section>
 
@@ -325,7 +369,7 @@ export default async function Home() {
           <div className="cta-in reveal">
             <h2 id="p-h" className="cta-h">
               Go on, tell your PC something.
-              <span className="grad-soft">Windows 10 and 11 · [FREE? confirm]</span>
+              <span className="grad-soft">Free for Windows 10 and 11</span>
             </h2>
             <DownloadButton links={dl} />
           </div>
@@ -343,9 +387,7 @@ export default async function Home() {
             <span>Genisys</span>
           </a>
           <nav aria-label="Footer" className="foot-links">
-            <a href="#features">Features</a>
-            <a href="#examples">Examples</a>
-            <a href="#faq">FAQ</a>
+            {SECTIONS.map(([href, label]) => <a key={href} href={href}>{label}</a>)}
           </nav>
           <p className="muted">© {new Date().getFullYear()} Genisys · Made by one developer who got tired of clicking.</p>
         </div>
