@@ -1,3 +1,4 @@
+import { APP_REPO } from "@/lib/github";
 // Tiny Upstash Redis client over its REST API (plain fetch, no package).
 // Vercel's Upstash integration adds KV_REST_API_URL / KV_REST_API_TOKEN to the project's env vars.
 const REDIS_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
@@ -90,8 +91,10 @@ export async function releases(limit = 20): Promise<Release[]> {
   return (rows ?? []).map((r) => JSON.parse(r) as Release);
 }
 
+/** The link pasted in /admin, if any. Links to our own GitHub releases are skipped: the newest release is used automatically, so an old one never pins the Download button. */
 export async function latestRelease(): Promise<Release | null> {
-  return (await releases(1))[0] ?? null;
+  const r = (await releases(1))[0];
+  return r && !`${r.exe ?? ""} ${r.zip ?? ""}`.includes(`github.com/${APP_REPO}/`) ? r : null;
 }
 
 export async function addRelease(r: Release) {
