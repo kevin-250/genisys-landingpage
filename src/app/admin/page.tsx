@@ -197,7 +197,7 @@ async function Users() {
       ) : (
         <div className="card adm-table-wrap">
           <table className="adm-table">
-            <thead><tr><th>Email</th><th>Name</th><th>Theme</th><th>Version</th><th>Joined</th></tr></thead>
+            <thead><tr><th>Email</th><th>Name</th><th>Theme</th><th>Version</th><th>PC</th><th>Joined</th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.email}>
@@ -205,6 +205,9 @@ async function Users() {
                   <td>{u.name ?? "—"}</td>
                   <td>{u.theme ?? "—"}</td>
                   <td>{u.version ?? "—"}</td>
+                  <td title={u.specs ? [u.specs.os, u.specs.gpu, u.specs.screen].filter(Boolean).join(" · ") : undefined}>
+                    {u.specs ? [u.specs.cpu?.replace(/\(R\)|\(TM\)|CPU|Processor|@.*$/g, "").replace(/\s+/g, " ").trim(), u.specs.ramGB && `${u.specs.ramGB} GB RAM`, u.specs.disk?.freeGB != null && `${u.specs.disk.freeGB} GB free`].filter(Boolean).join(" · ") : "—"}
+                  </td>
                   <td>{when(u.at)}</td>
                 </tr>
               ))}

@@ -105,7 +105,8 @@ export async function clearReleases() {
 
 /* ---------- Desktop app: accounts, error reports, user reports ---------- */
 
-export type AppUser = { email: string; name?: string; theme?: string; installId: string; version?: string; os?: string; at: number };
+export type PcSpecs = { os?: string; cpu?: string; cores?: number; ramGB?: number; gpu?: string; screen?: string; disk?: { sizeGB?: number; freeGB?: number } };
+export type AppUser = { email: string; name?: string; theme?: string; installId: string; version?: string; os?: string; specs?: PcSpecs; at: number };
 export type AppError = { kind: string; message: string; stack?: string; installId?: string; version?: string; os?: string; at: number };
 export type AppReport = { type: string; message: string; email?: string; name?: string; installId?: string; version?: string; os?: string; at: number };
 

@@ -29,7 +29,7 @@ const FAQ = [
   { q: "Is it free?", a: "Yes. Genisys is free to download and use, with no subscription. You only need an email to set it up." },
   {
     q: "What data leaves my PC?",
-    a: "Your email, name and theme choice from the first setup, so I know who uses Genisys. What you type is sent to the AI model that works out the steps. If you leave error reports on, error messages are sent too, with your user folder and name removed first. Messages you send from the Report tab come to me. Your memory, notes and settings stay on your PC.",
+    a: "Your email, name and theme choice from the first setup, plus basic PC specs (Windows version, CPU, RAM, screen, free disk space), so I know who uses Genisys and can make it run well. What you type is sent to the AI model that works out the steps; for tasks about your files it also gets your folder names (never file contents). If you leave error reports on, error messages are sent too, with your user folder and name removed first. Messages you send from the Report tab come to me. Your files, memory, notes and settings stay on your PC.",
   },
   { q: "Which Windows versions does it run on?", a: "Windows 10 and Windows 11." },
   {
