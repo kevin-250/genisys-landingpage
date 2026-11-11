@@ -12,16 +12,20 @@ const F = {
   agents: { title: "Many agents at once", body: "/agent 3 opens three agent windows, and /agent 2 [task one, task two] gives each one its own job." },
   memory: { title: "Remembers what worked", body: "When a command works, Genisys keeps the solution, so the next time is faster." },
   deletes: { title: "Deletes, but carefully", body: "It asks before deleting anything, and you can undo a delete if you change your mind." },
+  search: { title: "Search your whole PC", body: "Type /search and every drive is searched as you type, typos and all. Filter by type or by date, then open, copy, rename or delete right from the list." },
+  ownAI: { title: "Bring your own AI", body: "Free models are built in. Prefer Claude, OpenAI, Gemini or another? Paste your key, pick a model, and Genisys uses it for every task." },
+  editor: { title: "A real code workspace", body: "The Script Writer is a proper editor now: open a folder to get a file tree, tabs and breadcrumbs, and the AI writes straight into your file." },
 };
 
 const EXAMPLES = [
-  { group: "Files & folders", items: ["open my downloads folder", "find resme pdf"] },
-  { group: "Watch & listen", items: ["mouse trap episode 3", "open spotify"] },
+  { group: "Files & folders", items: ["open my downloads folder", "find resme pdf", "/search invoice pdf"] },
+  { group: "Apps", items: ["open whatsapp", "open spotify"] },
+  { group: "Watch & listen", items: ["mouse trap episode 3", "play some lofi"] },
   { group: "Web", items: ["search cheap flights to lisbon", "/browser best laptops under $800"] },
   { group: "Agents", items: ["/agent 3", "/agent 2 [plan a weekend in paris, find a cheap hotel there]"] },
 ];
 // Page sections, used by the top nav (a ☰ menu on phones) and the footer.
-const SECTIONS: [string, string][] = [["#how", "How it works"], ["#features", "Features"], ["#examples", "Examples"], ["#faq", "FAQ"]];
+const SECTIONS: [string, string][] = [["#how", "How it works"], ["#features", "Features"], ["#new", "What's new"], ["#examples", "Examples"], ["#faq", "FAQ"]];
 
 const ALL_EXAMPLES = EXAMPLES.flatMap((g) => g.items);
 
@@ -29,7 +33,7 @@ const FAQ = [
   { q: "Is it free?", a: "Yes. Genisys is free to download and use, with no subscription. You only need an email to set it up." },
   {
     q: "What data leaves my PC?",
-    a: "Your email, name and theme choice from the first setup, plus basic PC specs (Windows version, CPU, RAM, screen, free disk space), so I know who uses Genisys and can make it run well. What you type is sent to the AI model that works out the steps; for tasks about your files it also gets your folder names (never file contents). If you leave error reports on, error messages are sent too, with your user folder and name removed first. Messages you send from the Report tab come to me. Your files, memory, notes and settings stay on your PC.",
+    a: "Your email, name and theme choice from the first setup, plus basic PC specs (Windows version, CPU, RAM, screen, free disk space), so I know who uses Genisys and can make it run well. What you type is sent to the AI model that works out the steps (the free built-in models, or the provider you picked if you added your own key); for tasks about your files it also gets your folder names (never file contents). If you leave error reports on, error messages are sent too, with your user folder and name removed first. Messages you send from the Report tab come to me. Your files, memory, notes and settings stay on your PC.",
   },
   { q: "Which Windows versions does it run on?", a: "Windows 10 and Windows 11." },
   {
@@ -39,6 +43,10 @@ const FAQ = [
   {
     q: "Is it safe to let it delete files?",
     a: "It always asks before it deletes anything. And if you say yes and then regret it, the delete can be undone.",
+  },
+  {
+    q: "Can I use my own AI key, like Claude or OpenAI?",
+    a: "Yes. In Settings › Keys, under “Your own AI”, pick Claude (Anthropic), OpenAI, Google Gemini, DeepSeek, Mistral, OpenRouter or any OpenAI-compatible service, paste your key, choose a model and press Test. Genisys then uses it first for every task, and falls back to the free models if it ever fails. Your key stays on your PC.",
   },
   { q: "Does it work offline?", a: "Partly. New requests need the internet, because the AI runs online. Things Genisys has done for you before still work offline, straight from its memory." },
 ];
@@ -294,13 +302,76 @@ export default async function Home() {
                 <div className="dlg">
                   <b>Delete 3 files?</b>
                   <span>old_notes.txt, draft.docx, copy (2).png</span>
-                  <div className="dlg-btns"><span>Skip</span><span className="run">Delete</span></div>
+                  <div className="dlg-btns"><span>Deny</span><span className="run">Approve</span></div>
                 </div>
                 <div className="toast">
                   <Check /> 3 files deleted <span className="undo">Undo</span>
                 </div>
               </div>
               <p><b>{F.deletes.title}.</b> {F.deletes.body}</p>
+            </article>
+          </div>
+        </section>
+
+        {/* 3b · New in 1.3: whole-PC search, your own AI, the code workspace */}
+        <section className="section wrap" id="new" aria-labelledby="n-h">
+          <div className="head-c reveal">
+            <p className="kicker">New in Genisys 1.3</p>
+            <h2 id="n-h" className="grad">Search everything. Use any AI. Write real code.</h2>
+          </div>
+          <div className="trio">
+            <article className="t-card reveal" style={d(0)}>
+              <div className="t-vis nv" aria-hidden="true">
+                <code className="t-chip">/search invoce</code>
+                <div className="nv-card nv-search">
+                  <div className="nv-filters"><span className="on">Documents ▾</span><span>Past 7 days ▾</span></div>
+                  <div className="nv-row on" style={step(0)}><i className="fi pdf" /><span>invoice_october.pdf<small>Documents › Bills</small></span><em>PDF</em></div>
+                  <div className="nv-row" style={step(1)}><i className="fi" /><span>Invoices 2026<small>Desktop</small></span><em>Folder</em></div>
+                  <div className="nv-row" style={step(2)}><i className="fi" /><span>invoice template.docx<small>Documents</small></span><em>Word</em></div>
+                </div>
+              </div>
+              <p><b>{F.search.title}.</b> {F.search.body}</p>
+            </article>
+
+            <article className="t-card reveal" style={d(1)}>
+              <div className="t-vis nv" aria-hidden="true">
+                <div className="nv-card nv-ai">
+                  <span className="nv-lbl">Your own AI</span>
+                  <div className="nv-now"><i /> Now using <b>Claude · claude-opus-5-5</b></div>
+                  <div className="nv-provs">
+                    {["Claude", "OpenAI", "Gemini", "DeepSeek", "Mistral"].map((p, i) => (
+                      <span key={p} className={i === 0 ? "on" : ""} style={step(i)}>{p}</span>
+                    ))}
+                  </div>
+                  <div className="nv-ok"><Check /> Works: answered in 1.2s</div>
+                </div>
+              </div>
+              <p><b>{F.ownAI.title}.</b> {F.ownAI.body}</p>
+            </article>
+
+            <article className="t-card reveal" style={d(2)}>
+              <div className="t-vis nv" aria-hidden="true">
+                <div className="nv-card nv-ed">
+                  <div className="nv-side">
+                    <span className="nv-lbl">Explorer</span>
+                    <span>▾ backend</span>
+                    <span className="in">▾ middleware</span>
+                    <span className="in2 on">auth.js</span>
+                    <span className="in2">error.js</span>
+                    <span>▸ frontend</span>
+                  </div>
+                  <div className="nv-main">
+                    <div className="nv-tabs"><span className="on">auth.js</span><span>app.js</span><span className="dirty">random.js</span></div>
+                    <div className="nv-code">
+                      <span style={step(0)}><b>const</b> jwt = require(<em>&quot;jsonwebtoken&quot;</em>);</span>
+                      <span style={step(1)}><b>exports</b>.isAuthenticated = <b>async</b> (req) =&gt; {"{"}</span>
+                      <span style={step(2)}>&nbsp;&nbsp;<b>const</b> {"{"} token {"}"} = req.cookies;</span>
+                      <span style={step(3)}>{"}"};</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p><b>{F.editor.title}.</b> {F.editor.body}</p>
             </article>
           </div>
         </section>
